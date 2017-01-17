@@ -12,7 +12,7 @@ connected to 172.217.23.3:80, seq=3, time=74 ms, response=200
 
 ## Installation
 
-htping is a is a self-contained Go binary (no external dependencies). Simply download the binary to one of the directories in $PATH and run it.
+htping is a is a self-contained Go binary (no external dependencies). Simply download the binary to one of the directories in your $PATH and run it.
 
 ### Linux
 
