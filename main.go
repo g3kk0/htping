@@ -6,26 +6,54 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"regexp"
+	"net/url"
 	"strconv"
+	"strings"
 	"time"
 )
 
 func main() {
 	count := flag.Int("c", 100, "Count")
-	interval := flag.Int("i", 1, "Interval")
+	interval := flag.Int("i", 1, "Interval in seconds")
 	flag.Parse()
 	target := flag.Arg(0)
-	protocol, domain, port := targetParser(target)
-	ip := ip(domain)
 
+	// parse url
+	var host string
+	var port string
+
+	if !strings.HasPrefix(target, "http") {
+		target = "http://" + target
+	}
+
+	u, err := url.Parse(target)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if strings.Contains(u.Host, ":") {
+		host, port, _ = net.SplitHostPort(u.Host)
+	} else {
+		host = u.Host
+		if strings.Contains(u.Scheme, "https") {
+			port = "443"
+		} else {
+			port = "80"
+		}
+	}
+
+	// ip lookup
+	ip := getIP(host)
+
+	// http get
 	for i := 0; ; i++ {
+		response, elapsed := httpGet(u.Scheme + "://" + u.Host + u.Path)
+		fmt.Printf("connected to %s:%s, seq=%d, time=%d ms, response=%s\n", ip, port, i, elapsed, response)
 		if i >= *count {
 			break
+		} else {
+			time.Sleep(time.Duration(*interval) * time.Second)
 		}
-		response, elapsed := httpGet(protocol + "://" + domain + ":" + port)
-		fmt.Printf("connected to %s:%s, seq=%d, time=%d ms, response=%s\n", ip, port, i, elapsed, response)
-		time.Sleep(time.Duration(*interval) * time.Second)
 	}
 }
 
@@ -53,52 +81,10 @@ func httpGet(s string) (string, int64) {
 	}
 }
 
-func ip(s string) string {
+func getIP(s string) string {
 	addr, err := net.LookupHost(s)
 	if err != nil {
 		log.Fatal(err)
 	}
 	return addr[0]
-}
-
-func targetParser(s string) (string, string, string) {
-	// protocol
-	protoExpr, err := regexp.Compile("^https?")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var protocol string
-	if protoExpr.MatchString(s) {
-		protocol = protoExpr.FindString(s)
-	} else {
-		protocol = "http"
-	}
-
-	// port
-	portExpr, err := regexp.Compile(":\\d*$")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var port string
-	if portExpr.MatchString(s) {
-		port = portExpr.FindString(s)
-		port = port[1:]
-	} else if protocol == "https" {
-		port = "443"
-	} else {
-		port = "80"
-	}
-
-	// domain
-	domainExpr, err := regexp.Compile("^https?://")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	domain := domainExpr.ReplaceAllString(s, "")
-	domain = portExpr.ReplaceAllString(domain, "")
-
-	return protocol, domain, port
 }
