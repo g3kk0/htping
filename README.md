@@ -16,17 +16,17 @@ htping is a is a self-contained Go binary (no external dependencies). Simply dow
 
 ### Linux
 
-Download binary
+Download
 ```
 wget https://github.com/g3kk0/htping/releases/download/1.0.0/htping.zip -P /tmp
 ```
 
-Extract it
+Extract
 ```
 unzip /tmp/htping.zip -d /usr/local/bin
 ```
 
-Run it
+Run
 ```
 $ htping www.google.co.uk
 connected to 172.217.23.3:80, seq=0, time=18 ms, response=200
