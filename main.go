@@ -16,20 +16,35 @@ func main() {
 	count := flag.Int("c", 100, "Count")
 	interval := flag.Int("i", 1, "Interval in seconds")
 	flag.Parse()
-	target := flag.Arg(0)
+	scheme, host, port, path := parseUrl(flag.Arg(0))
+	ip := ipLookup(host)
 
-	// parse url
+	for i := 1; ; i++ {
+		response, elapsed := httpGet(scheme + "://" + host + ":" + port + path)
+		fmt.Printf("connected to %s:%s, seq=%d, time=%d ms, response=%s\n", ip, port, i, elapsed, response)
+		if i >= *count {
+			break
+		} else {
+			time.Sleep(time.Duration(*interval) * time.Second)
+		}
+	}
+}
+
+func parseUrl(s string) (string, string, string, string) {
 	var host string
 	var port string
 
-	if !strings.HasPrefix(target, "http") {
-		target = "http://" + target
+	if !strings.HasPrefix(s, "http") {
+		s = "http://" + s
 	}
 
-	u, err := url.Parse(target)
+	u, err := url.Parse(s)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	scheme := u.Scheme
+	path := u.Path
 
 	if strings.Contains(u.Host, ":") {
 		host, port, _ = net.SplitHostPort(u.Host)
@@ -42,19 +57,7 @@ func main() {
 		}
 	}
 
-	// ip lookup
-	ip := getIP(host)
-
-	// http get
-	for i := 0; ; i++ {
-		response, elapsed := httpGet(u.Scheme + "://" + u.Host + u.Path)
-		fmt.Printf("connected to %s:%s, seq=%d, time=%d ms, response=%s\n", ip, port, i, elapsed, response)
-		if i >= *count {
-			break
-		} else {
-			time.Sleep(time.Duration(*interval) * time.Second)
-		}
-	}
+	return scheme, host, port, path
 }
 
 func httpGet(s string) (string, int64) {
@@ -81,7 +84,7 @@ func httpGet(s string) (string, int64) {
 	}
 }
 
-func getIP(s string) string {
+func ipLookup(s string) string {
 	addr, err := net.LookupHost(s)
 	if err != nil {
 		log.Fatal(err)
