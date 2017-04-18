@@ -1,5 +1,7 @@
 # HyperText Ping
 
+https://travis-ci.org/g3kk0/htping.svg?branch=master
+
 Inspired by ping, htping is a tool for testing and monitoring HTTP endpoints.
 
 ```
